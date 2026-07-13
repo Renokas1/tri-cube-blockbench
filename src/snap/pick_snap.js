@@ -196,7 +196,85 @@ function getPickCandidates(pickIndex, priorPicks) {
   return {
     entries,
     corners: entries.map((e) => e.point),
-    hint: entries.length ? 'Pick second edge corner (same face)' : 'Pick second edge corner on the same face',
+    hint: 'Pick anywhere on the same face',
+  };
+}
+
+function getThirdPickFacePlane(p0Pick, p1Pick, hitPoint) {
+  const p0 = p0Pick.point || p0Pick;
+  const p1 = p1Pick.point || p1Pick;
+  const uHat = TriCube.normalize(TriCube.sub(p1, p0));
+  if (!uHat) return null;
+
+  const toHit = TriCube.sub(hitPoint, p0);
+  const toHitInPlane = TriCube.sub(toHit, TriCube.scale(uHat, TriCube.dot(toHit, uHat)));
+  let refDir = TriCube.length(toHitInPlane) > SNAP_EPS ? TriCube.normalize(toHitInPlane) : null;
+
+  const cube = p0Pick?.cube;
+  const cornerIndex = p0Pick?.cornerIndex;
+  if (cube instanceof Cube && cornerIndex != null) {
+    const display = getCubeVerticesWorld(cube);
+    const perpDirs = [];
+    for (const i of getAdjacentCornerIndices(display, cornerIndex)) {
+      const d = TriCube.normalize(TriCube.sub(display[i], p0));
+      if (!d) continue;
+      if (Math.abs(TriCube.dot(d, uHat)) < 0.2) perpDirs.push(d);
+    }
+
+    if (perpDirs.length) {
+      if (refDir) {
+        let best = perpDirs[0];
+        let bestDot = TriCube.dot(refDir, best);
+        for (const d of perpDirs) {
+          const score = TriCube.dot(refDir, d);
+          if (score > bestDot) {
+            bestDot = score;
+            best = d;
+          }
+        }
+        refDir = best;
+      } else {
+        refDir = perpDirs[0];
+      }
+    }
+  }
+
+  if (!refDir) return null;
+
+  const normal = TriCube.normalize(TriCube.cross(uHat, refDir));
+  if (!normal) return null;
+
+  return { origin: p0.slice(), normal };
+}
+
+function resolveThirdPickPoint(hitPoint, p0Pick, p1Pick, snapMode, candidates) {
+  const plane = getThirdPickFacePlane(p0Pick, p1Pick, hitPoint);
+  let point = hitPoint.slice();
+  if (plane) {
+    point = TriCube.projectPointOntoPlane(point, plane.origin, plane.normal);
+  }
+
+  if (snapMode === SNAP.CORNER && candidates.entries?.length) {
+    const nearest = nearestEntry(point, candidates.entries);
+    const edgeLen =
+      p0Pick?.cube instanceof Cube
+        ? getCubeEdgeLength(getCubeVerticesWorld(p0Pick.cube))
+        : 1;
+    const snapTol = Math.max(0.35, edgeLen * 0.45);
+    if (nearest && TriCube.distance(point, nearest.point) <= snapTol) {
+      return {
+        ...nearest,
+        hint: 'Pick anywhere on the same face',
+      };
+    }
+  }
+
+  return {
+    point,
+    outliner: displayToOutliner(point, p0Pick),
+    mode: SNAP.FACE,
+    cube: null,
+    hint: 'Pick anywhere on the same face',
   };
 }
 
@@ -337,6 +415,10 @@ function pickWorldPointFromRaycast(result, snapMode, context = {}) {
   const candidates = getPickCandidates(pickIndex, priorPicks);
   const refPick = priorPicks[0];
 
+  if (pickIndex === 2 && priorPicks.length >= 2) {
+    return resolveThirdPickPoint(hitPoint, priorPicks[0], priorPicks[1], snapMode, candidates);
+  }
+
   const cube = result.element instanceof Cube ? result.element : result.cube;
 
   if (result.type === 'vertex' && cube instanceof Cube && result.vertex_index != null) {
@@ -361,7 +443,7 @@ function pickWorldPointFromRaycast(result, snapMode, context = {}) {
 
   if (candidates.entries.length) {
     const snapped = resolveSnapPoint(hitPoint, candidates, snapMode, {
-      strictCandidates: pickIndex > 0,
+      strictCandidates: pickIndex === 1,
       ...context.snapOptions,
     });
     return {
@@ -396,6 +478,7 @@ function registerPickSnap(TriCube) {
   TriCube.getOutlinerCorners = getOutlinerCorners;
   TriCube.getCubeVerticesWorld = getCubeVerticesWorld;
   TriCube.getPickCandidates = getPickCandidates;
+  TriCube.getThirdPickFacePlane = getThirdPickFacePlane;
   TriCube.pickWorldPointFromRaycast = pickWorldPointFromRaycast;
   TriCube.snapModeFromEvent = snapModeFromEvent;
   TriCube.closestPointOnSegment = closestPointOnSegment;

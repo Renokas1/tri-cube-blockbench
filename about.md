@@ -11,7 +11,7 @@ Create a perfectly oriented cube from **three corner picks** on existing geometr
 3. Click three points on the same face:
    - **Pick 1** — anchor corner
    - **Pick 2** — end of the first edge from the anchor
-   - **Pick 3** — end of the second edge on that face
+   - **Pick 3** — anywhere on the same face
 
 ### Snap modifiers
 

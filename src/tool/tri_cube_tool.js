@@ -206,7 +206,7 @@ function registerTriCubeTool(TriCube) {
     tool = new Tool('tri_cube_tool', {
       name: 'Tri-Cube Tool',
       description:
-        'Create a cube from 3 picks: anchor corner, edge neighbor, then face neighbor. Corners snap aggressively; Shift = edge, Ctrl = free face.',
+        'Create a cube from 3 picks: anchor corner, edge neighbor, then any point on the same face. Shift = edge snap on picks 1–2, Ctrl = raw face hit on picks 1–2.',
       icon: 'crop_square',
       category: 'tools',
       cursor: 'crosshair',

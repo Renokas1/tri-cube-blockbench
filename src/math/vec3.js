@@ -51,6 +51,11 @@ function roundVec3(v, step = 0.0625) {
   return [roundToGrid(v[0], step), roundToGrid(v[1], step), roundToGrid(v[2], step)];
 }
 
+function projectPointOntoPlane(point, origin, normal) {
+  const offset = dot(sub(point, origin), normal);
+  return sub(point, scale(normal, offset));
+}
+
 function registerVec3(TriCube) {
   TriCube.vec3 = vec3;
   TriCube.add = add;
@@ -63,4 +68,5 @@ function registerVec3(TriCube) {
   TriCube.distance = distance;
   TriCube.roundToGrid = roundToGrid;
   TriCube.roundVec3 = roundVec3;
+  TriCube.projectPointOntoPlane = projectPointOntoPlane;
 }

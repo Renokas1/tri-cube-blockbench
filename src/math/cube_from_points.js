@@ -5,7 +5,6 @@
  */
 function computeCubeFromThreePoints(p0, p1, p2, options = {}) {
   const {
-    rightAngleTolerance = 0.08,
     minEdgeLength = 0.0625,
     gridStep = 0.0625,
     extrudeDepth = 1,
@@ -24,16 +23,7 @@ function computeCubeFromThreePoints(p0, p1, p2, options = {}) {
   if (vRawLen < minEdgeLength) {
     return {
       valid: false,
-      error: 'Third point is too close to the anchor — pick a different corner.',
-    };
-  }
-
-  const vRawHat = TriCube.normalize(vRaw);
-  const cosCornerAngle = Math.abs(TriCube.dot(uHat, vRawHat));
-  if (cosCornerAngle > rightAngleTolerance) {
-    return {
-      valid: false,
-      error: `Pick a corner on the same face (not along the first edge). Angle is too shallow.`,
+      error: 'Third point is too close to the anchor — pick a different point on the face.',
     };
   }
 

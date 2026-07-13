@@ -31,7 +31,7 @@ If you still see `setSelected` errors, Blockbench is running a stale copy — re
 |------|------|
 | 1 | Anchor corner |
 | 2 | End of first edge from anchor |
-| 3 | End of second edge on the **same face** |
+| 3 | Anywhere on the **same face** (projects click onto that face; still snaps to corners when close) |
 
 **Snap modifiers**
 

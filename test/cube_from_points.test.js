@@ -59,12 +59,12 @@ function run() {
     assert(!r.valid, 'expected invalid');
   });
 
-  test('rejects non-square angle', () => {
-    const r = TriCube.computeCubeFromThreePoints([0, 0, 0], [2, 0, 0], [1, 1, 0], {
+  test('accepts third pick anywhere on face plane', () => {
+    const r = TriCube.computeCubeFromThreePoints([0, 0, 0], [2, 0, 0], [2, 2, 0], {
       roundOutput: false,
-      rightAngleTolerance: 0.01,
     });
-    assert(!r.valid, 'expected invalid for 45°');
+    assert(r.valid, 'expected valid for in-plane 45° pick');
+    assert(approx(r.sizes[0], 2) && approx(r.sizes[1], 2) && approx(r.sizes[2], 1), `sizes ${r.sizes}`);
   });
 
   test('uses independent u and v lengths from picks', () => {
