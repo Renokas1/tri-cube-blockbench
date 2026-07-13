@@ -6,7 +6,7 @@ function registerTriCubePlugin(TriCube) {
 
   Plugin.register('tri_cube_tool', {
     title: 'Tri-Cube',
-    author: 'renov',
+    author: 'Renokas1',
     description: 'Create a perfectly oriented cube from 3 corner picks',
     about:
       'Pick three adjacent corners: anchor, then two neighbors on the same face. Shift = edge snap, Ctrl = face hit. Java Block model format recommended.',

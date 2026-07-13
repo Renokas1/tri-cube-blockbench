@@ -61,6 +61,15 @@ ${chunks.join('\n')}
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, output, 'utf8');
+
+const ABOUT_SRC = path.join(ROOT, 'about.md');
+const ABOUT_OUT = path.join(ROOT, 'dist', 'about.md');
+if (fs.existsSync(ABOUT_SRC)) {
+  fs.copyFileSync(ABOUT_SRC, ABOUT_OUT);
+} else {
+  console.warn('Missing about.md — Blockbench dev reload may log CDN 404 errors');
+}
+
 if (fs.existsSync(LEGACY_OUT)) {
   fs.unlinkSync(LEGACY_OUT);
   console.log('Removed stale dist/tri_cube.js (use tri_cube_tool.js instead)');
