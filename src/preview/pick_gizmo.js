@@ -4,7 +4,7 @@
 function registerPickGizmo(TriCube) {
   const COLORS = {
     hover: 0x44aaff,
-    pick: [0x33ff66, 0xffcc33, 0xff6633],
+    pick: [0x33ff66, 0xffcc33, 0xff6633, 0xaa44ff],
     line: 0xffffff,
     ghost: 0x66ff99,
     candidate: 0x4488ff,
@@ -137,10 +137,15 @@ function registerPickGizmo(TriCube) {
     clearGroup(lineGroup);
 
     const points = picks.map((p) => p.point || p);
-    if (points.length >= 2) {
+    if (points.length >= 4) {
+      addLine(lineGroup, points[0], points[1], COLORS.line);
+      addLine(lineGroup, points[1], points[2], COLORS.line);
+      addLine(lineGroup, points[2], points[3], COLORS.line);
+      addLine(lineGroup, points[3], points[0], COLORS.ghost);
+    } else if (points.length >= 2) {
       addLine(lineGroup, points[0], points[1], COLORS.line);
     }
-    if (points.length >= 3) {
+    if (points.length === 3) {
       addLine(lineGroup, points[0], points[2], COLORS.line);
       addLine(lineGroup, points[1], points[2], COLORS.ghost);
     }

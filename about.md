@@ -1,10 +1,10 @@
-# Tri-Cube
+# Tri-Cube & Quad-Cube
 
-Create a perfectly oriented cube from **three corner picks** on existing geometry.
+Create oriented cubes from picks on existing geometry.
 
 **Author:** Renokas1
 
-## Usage
+## Tri-Cube (3 picks)
 
 1. Open a **Java Block Model** project.
 2. Enable **Tools → Tri-Cube Tool**.
@@ -13,7 +13,16 @@ Create a perfectly oriented cube from **three corner picks** on existing geometr
    - **Pick 2** — end of the first edge from the anchor
    - **Pick 3** — anywhere on the same face
 
-### Snap modifiers
+## Quad-Cube (4 picks)
+
+1. Enable **Tools → Quad-Cube Tool**.
+2. Click four points near the same plane:
+   - **Pick 1** — anchor corner on a cube (UV copied from this cube)
+   - **Picks 2–4** — anywhere near the face plane (pick 4 projects onto the plane from picks 1–3)
+
+Both tools extrude **1 unit** inward. Width/height come from your picks.
+
+### Snap modifiers (both tools)
 
 | Modifier | Snaps to |
 |----------|----------|

@@ -179,9 +179,21 @@ function scoreGhostAlignment(cube, ghostCorners, extrudeSign) {
   return sum;
 }
 
-function scorePickAlignment(cube, picks, extrudeSign) {
+function scorePickAlignment(cube, picks, extrudeSign, result) {
   refreshCube(cube);
   const verts = cube.getGlobalVertexPositions();
+  const map = GHOST_TO_BB[extrudeSign] || GHOST_TO_BB[1];
+
+  if (result?.pickGhostCorners?.length === 4 && picks.length >= 4) {
+    let sum = 0;
+    for (let i = 0; i < 4; i++) {
+      const bbIdx = map[result.pickGhostCorners[i]];
+      if (!verts[bbIdx]) return Infinity;
+      sum += TriCube.distance(verts[bbIdx], picks[i].point);
+    }
+    return sum;
+  }
+
   const idx = pickEdgeCornerIndices(extrudeSign);
   if (!verts[idx.pick1] || !verts[idx.pick2] || !verts[idx.pick3]) return Infinity;
 
@@ -199,11 +211,11 @@ function getResultSizes(result) {
 function placeCube(cube, result, parent, picks, extrudeSign) {
   const sizes = getResultSizes(result);
   const idx = pickEdgeCornerIndices(extrudeSign);
-  const p0 = picks[0].point;
+  const anchorTarget = result.worldAnchor ?? picks[0].point;
 
   resetCubeForm(cube, sizes);
 
-  translateUnrotatedCorner(cube, p0, idx.pick1, parent);
+  translateUnrotatedCorner(cube, anchorTarget, idx.pick1, parent);
 
   if (typeof cube.transferOrigin === 'function') {
     cube.transferOrigin(pivotOutlinerCorner(cube, extrudeSign));
@@ -211,20 +223,34 @@ function placeCube(cube, result, parent, picks, extrudeSign) {
   refreshCube(cube);
 
   applyRotationFromBasis(cube, result.basis, parent);
-  translateRotatedCorner(cube, p0, idx.pick1, parent);
+  translateRotatedCorner(cube, anchorTarget, idx.pick1, parent);
 
   return {
-    pickScore: scorePickAlignment(cube, picks, extrudeSign),
+    pickScore: scorePickAlignment(cube, picks, extrudeSign, result),
     ghostScore: scoreGhostAlignment(cube, result.corners, extrudeSign),
   };
 }
 
-function createCubeFromResult(result, parent, picks) {
-  const sizes = getResultSizes(result);
+function chooseBestPlacement(cube, result, parent, picks) {
   const primarySign = result.extrudeSign ?? 1;
+  const primary = placeCube(cube, result, parent, picks, primarySign);
+  const alternate = placeCube(cube, result, parent, picks, -primarySign);
+
+  const best =
+    alternate.ghostScore + 0.0001 < primary.ghostScore
+      ? { ...alternate, extrudeSign: -primarySign }
+      : { ...primary, extrudeSign: primarySign };
+
+  placeCube(cube, result, parent, picks, best.extrudeSign);
+  return best;
+}
+
+function createCubeFromResult(result, parent, picks, options = {}) {
+  const sizes = getResultSizes(result);
+  const cubeName = options.cubeName || 'tri_cube';
 
   const cube = new Cube({
-    name: 'tri_cube',
+    name: cubeName,
     from: [0, 0, 0],
     to: sizes.slice(),
     origin: [0, 0, 0],
@@ -238,17 +264,7 @@ function createCubeFromResult(result, parent, picks) {
     cube.addTo(undefined);
   }
 
-  const primary = placeCube(cube, result, parent, picks, primarySign);
-  let best = { ...primary, extrudeSign: primarySign };
-
-  if (primary.ghostScore > GHOST_ALIGN_EPS) {
-    const alt = placeCube(cube, result, parent, picks, -primarySign);
-    if (alt.ghostScore + 0.0001 < primary.ghostScore) {
-      best = { ...alt, extrudeSign: -primarySign };
-    } else {
-      placeCube(cube, result, parent, picks, primarySign);
-    }
-  }
+  const best = chooseBestPlacement(cube, result, parent, picks);
 
   if (best.ghostScore > GHOST_ALIGN_EPS && typeof console !== 'undefined') {
     console.warn(

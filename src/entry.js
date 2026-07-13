@@ -1,15 +1,13 @@
 /**
- * Tri-Cube — Blockbench plugin entry (bundled into dist/tri_cube_tool.js)
+ * Tri-Cube & Quad-Cube — Blockbench plugin entry (bundled into dist/tri_cube_tool.js)
  */
 function registerTriCubePlugin(TriCube) {
-  let tool = null;
-
   Plugin.register('tri_cube_tool', {
-    title: 'Tri-Cube',
+    title: 'Tri-Cube & Quad-Cube',
     author: 'Renokas1',
-    description: 'Create a perfectly oriented cube from 3 corner picks',
+    description: 'Create oriented cubes from 3 or 4 picks on existing geometry',
     about:
-      'Pick three adjacent corners: anchor, then two neighbors on the same face. Shift = edge snap, Ctrl = face hit. Java Block model format recommended.',
+      'Tri-Cube: 3 picks (anchor + two edges on one face). Quad-Cube: 4 picks anywhere on a plane — best-fit face, 1-unit depth. Shift = edge snap, Ctrl = face hit. Java Block model format recommended.',
     icon: 'crop_square',
     version: PLUGIN_VERSION,
     variant: 'desktop',
@@ -20,16 +18,18 @@ function registerTriCubePlugin(TriCube) {
         console.error('[Tri-Cube] Blockbench Tool API missing — update Blockbench or reload the correct plugin file.');
         return;
       }
-      tool = TriCube.registerTriCubeToolUi();
+      TriCube.registerTriCubeToolUi();
+      TriCube.registerQuadCubeToolUi();
       console.log(
         `%c[Tri-Cube] v${PLUGIN_VERSION} loaded OK`,
         'color:#33ff66;font-weight:bold',
-        '— outliner from/to fix (v0.3+)'
+        '— Tri-Cube + Quad-Cube tools'
       );
     },
     onunload() {
       TriCube.unregisterTriCubeToolUi?.();
-      tool = null;
+      TriCube.unregisterQuadCubeToolUi?.();
+      TriCube.disposePickGizmo?.();
     },
   });
 }

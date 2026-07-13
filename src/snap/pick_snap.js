@@ -404,6 +404,66 @@ function displayToOutliner(displayPoint, referencePick) {
   return displayPoint.slice();
 }
 
+function pickWorldPointFromRaycastQuad(result, snapMode, context = {}) {
+  if (!result || result.type === 'none') return null;
+
+  const hitPoint = TriCube.getRaycastHitPoint(result);
+  if (!hitPoint) return null;
+
+  const pickIndex = context.pickIndex ?? 0;
+  const priorPicks = context.priorPicks ?? [];
+  const refPick = priorPicks[0];
+  const cube = result.element instanceof Cube ? result.element : result.cube;
+
+  if (pickIndex === 0) {
+    if (result.type === 'vertex' && cube instanceof Cube && result.vertex_index != null) {
+      const entry = makeCornerEntry(cube, result.vertex_index);
+      return { ...entry, hint: 'Pick anchor corner on a cube' };
+    }
+    if (cube instanceof Cube) {
+      const entry = nearestCornerEntry(cube, hitPoint);
+      return { ...entry, hint: 'Pick anchor corner on a cube' };
+    }
+    return null;
+  }
+
+  let point = hitPoint.slice();
+  let mode = SNAP.FACE;
+  let pickCube = null;
+
+  if (snapMode === SNAP.CORNER && cube instanceof Cube) {
+    const entry = nearestCornerEntry(cube, hitPoint);
+    point = entry.point;
+    mode = SNAP.CORNER;
+    pickCube = cube;
+  } else if (snapMode === SNAP.EDGE && cube instanceof Cube) {
+    const edges = getAllCubeEdgesWorld();
+    const nearestEdge = nearestEdgePoint(hitPoint, edges);
+    if (nearestEdge) {
+      point = nearestEdge.point;
+      mode = SNAP.EDGE;
+    }
+  }
+
+  if (pickIndex >= 3 && priorPicks.length >= 3) {
+    const plane = TriCube.fitPlaneFromPoints(priorPicks.slice(0, 3).map((p) => p.point));
+    if (plane) {
+      point = TriCube.projectPointOntoPlane(point, plane.origin, plane.normal);
+    }
+  }
+
+  const hint =
+    pickIndex < 3 ? 'Pick a point near the face plane' : 'Pick a point on the fitted plane';
+
+  return {
+    point,
+    outliner: displayToOutliner(point, refPick),
+    mode,
+    cube: pickCube,
+    hint,
+  };
+}
+
 function pickWorldPointFromRaycast(result, snapMode, context = {}) {
   if (!result || result.type === 'none') return null;
 
@@ -480,6 +540,7 @@ function registerPickSnap(TriCube) {
   TriCube.getPickCandidates = getPickCandidates;
   TriCube.getThirdPickFacePlane = getThirdPickFacePlane;
   TriCube.pickWorldPointFromRaycast = pickWorldPointFromRaycast;
+  TriCube.pickWorldPointFromRaycastQuad = pickWorldPointFromRaycastQuad;
   TriCube.snapModeFromEvent = snapModeFromEvent;
   TriCube.closestPointOnSegment = closestPointOnSegment;
 }
