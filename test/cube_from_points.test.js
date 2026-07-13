@@ -43,15 +43,15 @@ function run() {
 
   console.log('cube_from_points');
 
-  test('axis-aligned unit cube from origin picks', () => {
+  test('face spans both picked edges with depth 1', () => {
     const p0 = [0, 0, 0];
     const p1 = [2, 0, 0];
     const p2 = [0, 2, 0];
     const r = TriCube.computeCubeFromThreePoints(p0, p1, p2, { roundOutput: false });
-    assert(r.valid, 'expected valid cube');
-    assert(approx(r.sideLength, 2), `sideLength ${r.sideLength}`);
-    assert(r.corners.length === 8, 'eight corners');
-    assert(approx(r.corners[7][0], 2) && approx(r.corners[7][1], 2) && approx(r.corners[7][2], 2), 'far corner');
+    assert(r.valid, 'expected valid box');
+    assert(approx(r.sizes[0], 2) && approx(r.sizes[1], 2) && approx(r.sizes[2], 1), `sizes ${r.sizes}`);
+    assert(approx(r.corners[3][0], 2) && approx(r.corners[3][1], 2) && approx(r.corners[3][2], 0), 'face corner');
+    assert(approx(r.corners[7][0], 2) && approx(r.corners[7][1], 2) && approx(r.corners[7][2], 1), 'depth corner');
   });
 
   test('rejects collinear picks', () => {
@@ -67,23 +67,24 @@ function run() {
     assert(!r.valid, 'expected invalid for 45°');
   });
 
-  test('forces cube from first edge even when third corner is closer on another axis', () => {
+  test('uses independent u and v lengths from picks', () => {
     const r = TriCube.computeCubeFromThreePoints([0, 0, 0], [4, 0, 0], [0, 2, 0], {
       roundOutput: false,
     });
-    assert(r.valid, 'expected valid cube from direction picks');
-    assert(approx(r.sideLength, 4), `sideLength ${r.sideLength}`);
+    assert(r.valid, 'expected valid box');
+    assert(approx(r.sizes[0], 4) && approx(r.sizes[1], 2) && approx(r.sizes[2], 1), `sizes ${r.sizes}`);
+    assert(approx(r.corners[1][0], 4) && approx(r.corners[2][1], 2), 'picks lie on face edges');
   });
 
-  test('45° rotated cube in XY plane still valid when edges equal', () => {
+  test('45° rotated face still valid with depth 1', () => {
     const s = 2;
     const c = Math.SQRT1_2;
     const p0 = [0, 0, 0];
     const p1 = [s * c, s * c, 0];
     const p2 = [-s * c, s * c, 0];
     const r = TriCube.computeCubeFromThreePoints(p0, p1, p2, { roundOutput: false });
-    assert(r.valid, 'expected valid rotated cube');
-    assert(approx(r.sideLength, s), `sideLength ${r.sideLength}`);
+    assert(r.valid, 'expected valid rotated box');
+    assert(approx(r.sizes[0], s) && approx(r.sizes[1], s) && approx(r.sizes[2], 1), `sizes ${r.sizes}`);
   });
 
   test('extrude sign biases plane side without flipping u/v/w', () => {
@@ -99,15 +100,11 @@ function run() {
       roundOutput: false,
       biasCenter: center,
     });
-    assert(outward.valid && inward.valid, 'expected valid cubes');
+    assert(outward.valid && inward.valid, 'expected valid boxes');
     assert(outward.extrudeSign === 1, 'default extrudes along +w');
     assert(inward.extrudeSign === -1, 'inward extrudes along -w');
-    assert(outward.basis.w[0] > 0 && inward.basis.w[0] > 0, 'basis w stays right-handed');
-    assert(approx(outward.corners[0][0], 10) && approx(inward.corners[0][0], 10), 'pick 1 preserved');
-    assert(approx(outward.corners[1][1], 2) && approx(inward.corners[1][1], 2), 'pick 2 preserved');
-    assert(approx(outward.corners[2][2], 2) && approx(inward.corners[2][2], 2), 'pick 3 preserved');
-    assert(approx(outward.corners[4][0], 12), 'outward bulk on +X side');
-    assert(approx(inward.corners[4][0], 8), 'inward bulk on -X side');
+    assert(approx(outward.corners[4][0], 11), 'outward depth is 1 unit along +X');
+    assert(approx(inward.corners[4][0], 9), 'inward depth is 1 unit along -X');
   });
 
   console.log(`\n${passed} passed`);

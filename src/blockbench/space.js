@@ -91,9 +91,10 @@ function pivotOutlinerCorner(cube, extrudeSign) {
   return [cube.from[0], cube.from[1], cube.to[2]];
 }
 
-function resetCubeForm(cube, size) {
+function resetCubeForm(cube, sizes) {
+  const [sx, sy, sz] = sizes;
   cube.from.splice(0, 3, 0, 0, 0);
-  cube.to.splice(0, 3, size, size, size);
+  cube.to.splice(0, 3, sx, sy, sz);
   cube.origin.splice(0, 3, 0, 0, 0);
   cube.rotation.splice(0, 3, 0, 0, 0);
   refreshCube(cube);
@@ -191,12 +192,16 @@ function scorePickAlignment(cube, picks, extrudeSign) {
   );
 }
 
+function getResultSizes(result) {
+  return result.sizes || result.to || [result.sideLength, result.sideLength, result.sideLength];
+}
+
 function placeCube(cube, result, parent, picks, extrudeSign) {
-  const s = result.sideLength;
+  const sizes = getResultSizes(result);
   const idx = pickEdgeCornerIndices(extrudeSign);
   const p0 = picks[0].point;
 
-  resetCubeForm(cube, s);
+  resetCubeForm(cube, sizes);
 
   translateUnrotatedCorner(cube, p0, idx.pick1, parent);
 
@@ -215,13 +220,13 @@ function placeCube(cube, result, parent, picks, extrudeSign) {
 }
 
 function createCubeFromResult(result, parent, picks) {
-  const s = result.sideLength;
+  const sizes = getResultSizes(result);
   const primarySign = result.extrudeSign ?? 1;
 
   const cube = new Cube({
     name: 'tri_cube',
     from: [0, 0, 0],
-    to: [s, s, s],
+    to: sizes.slice(),
     origin: [0, 0, 0],
     rotation: [0, 0, 0],
     autouv: 1,

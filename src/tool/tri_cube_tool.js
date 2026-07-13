@@ -174,7 +174,7 @@ function registerTriCubeTool(TriCube) {
     });
 
     Undo.finishEdit('Create cube from 3 points');
-    status(`Tri-Cube: created ${computed.sideLength.toFixed(3)} cube`);
+    status(`Tri-Cube: created ${TriCube.formatSizeLabel(computed.sizes)} box`);
     resetPicks();
   }
 
