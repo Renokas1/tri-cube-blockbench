@@ -1,0 +1,14 @@
+{
+  "name": "tri-cube-blockbench",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Blockbench plugin — create a rotated cube from 3 corner picks",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "install-plugin": "node scripts/install-plugin.js",
+    "test": "node test/cube_from_points.test.js"
+  },
+  "devDependencies": {
+    "blockbench-types": "^4.0.0"
+  }
+}
