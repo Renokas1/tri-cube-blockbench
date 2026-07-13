@@ -54,13 +54,20 @@ function registerTriCubeTool(TriCube) {
     }
   }
 
+  function cubeComputeOptions(extra = {}) {
+    return {
+      biasCenter: TriCube.getProjectCenterDisplay?.(),
+      ...extra,
+    };
+  }
+
   function updateGhostPreview(hoverPick) {
     if (state.picks.length === 2 && hoverPick?.point) {
       const trial = TriCube.computeCubeFromThreePoints(
         state.picks[0].point,
         state.picks[1].point,
         hoverPick.point,
-        { roundOutput: false }
+        cubeComputeOptions({ roundOutput: false })
       );
       TriCube.setGhostCubePreview?.(trial.valid ? trial.corners : null);
       return;
@@ -80,7 +87,7 @@ function registerTriCubeTool(TriCube) {
   }
 
   function onCanvasHover(ray) {
-    if (!ray || ray.type === 'none') {
+    if (!ray) {
       state.hoverPick = null;
       TriCube.setHoverPickPoint?.(null);
       TriCube.setGhostCubePreview?.(null);
@@ -105,7 +112,7 @@ function registerTriCubeTool(TriCube) {
   }
 
   function onCanvasClick(ray) {
-    if (!ray || ray.type === 'none') {
+    if (!ray) {
       status('Tri-Cube: click a cube face or corner');
       return;
     }
@@ -130,22 +137,35 @@ function registerTriCubeTool(TriCube) {
     finishFromPicks();
   }
 
+  function notifyError(message) {
+    status(message);
+    if (typeof Blockbench !== 'undefined' && Blockbench.showQuickMessage) {
+      Blockbench.showQuickMessage(message, 2500);
+    }
+  }
+
   function finishFromPicks() {
-    const [p0, p1, p2] = state.picks.map((p) => p.point);
-    const computed = TriCube.computeCubeFromThreePoints(p0, p1, p2);
+    const p0d = state.picks[0].point;
+    const p1d = state.picks[1].point;
+    const p2d = state.picks[2].point;
+
+    const computed = TriCube.computeCubeFromThreePoints(
+      p0d,
+      p1d,
+      p2d,
+      cubeComputeOptions({ roundOutput: false })
+    );
 
     if (!computed.valid) {
-      status(`Tri-Cube: ${computed.error}`);
+      notifyError(`Tri-Cube: ${computed.error}`);
       resetPicks();
       return;
     }
 
-    computed.rotation = TriCube.basisToRotationDegrees(computed.basis.u, computed.basis.v, computed.basis.w);
-
-    const parent = TriCube.getInsertionParent();
+    const parent = TriCube.getInsertionParent(state.picks);
     Undo.initEdit({ elements: [], outliner: true, selection: true });
 
-    const cube = TriCube.createCubeFromResult(computed, parent);
+    const cube = TriCube.createCubeFromResult(computed, parent, state.picks);
 
     Canvas.updateView({
       elements: [cube],
@@ -184,6 +204,7 @@ function registerTriCubeTool(TriCube) {
       cursor: 'crosshair',
       selectElements: false,
       transformerMode: 'hidden',
+      raycast_options: { vertices: true, edges: true },
       onSelect() {
         resetPicks();
         status('Tri-Cube: pick anchor corner — blue dot follows cursor, green/yellow/orange lock each pick');

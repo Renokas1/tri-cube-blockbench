@@ -11,23 +11,12 @@ npm run build
 
 Load in Blockbench:
 
-1. **Remove** any existing Tri-Cube plugin first (Plugins → manage → delete/uninstall).
-   Dev reload will **not** work if an old copy is still loaded — its broken `onunload` blocks the update.
-2. Build and install:
+1. **Remove the old plugin** — Plugins → manage → delete/uninstall anything named **tri_cube** (the old broken copy). Do not use Dev Reload on it.
+2. **File → Plugins → Load Plugin From File** →  
+   `C:\Users\renov\Documents\Master plugin chef\tri-cube-blockbench\dist\tri_cube_tool.js`
+3. Confirm in the console (F12): green **`[Tri-Cube] v0.2.2 loaded OK`** message.
 
-```bash
-npm run build
-npm run install-plugin
-```
-
-   Or **File → Plugins → Load Plugin From File** → `dist/tri_cube.js` (full path below).
-3. Reload plugins: `Ctrl/Cmd + J`
-
-Verify in the dev console: `[Tri-Cube] loaded v0.1.1 — Tool API`
-
-Plugin file path:
-
-`C:\Users\renov\Documents\Master plugin chef\tri-cube-blockbench\dist\tri_cube.js`
+If you still see `setSelected` errors, Blockbench is running a stale copy — restart Blockbench and repeat step 1.
 
 ## Usage
 
@@ -60,7 +49,7 @@ npm run build    # bundle → dist/tri_cube.js
 npm test         # math unit tests (no Blockbench needed)
 ```
 
-Do not hand-edit `dist/tri_cube.js` (generated).
+Do not hand-edit `dist/tri_cube_tool.js` (generated). The old `dist/tri_cube.js` is no longer produced.
 
 ## Architecture
 

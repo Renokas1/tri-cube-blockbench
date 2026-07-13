@@ -1,11 +1,14 @@
 /**
- * Bundles src/*.js into dist/tri_cube.js for Blockbench.
+ * Bundles src/*.js into dist/tri_cube_tool.js for Blockbench.
+ * Plugin id must match filename: tri_cube_tool.js
  */
 const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const OUT = path.join(ROOT, 'dist', 'tri_cube.js');
+const PLUGIN_ID = 'tri_cube_tool';
+const OUT = path.join(ROOT, 'dist', `${PLUGIN_ID}.js`);
+const LEGACY_OUT = path.join(ROOT, 'dist', 'tri_cube.js');
 
 const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
 const version = pkg.version;
@@ -30,6 +33,9 @@ const chunks = [
   read('src/blockbench/space.js'),
   '  registerSpace(TriCube);',
   '',
+  read('src/blockbench/scene_space.js'),
+  '  registerSceneSpace(TriCube);',
+  '',
   read('src/tool/tri_cube_tool.js'),
   '  registerTriCubeTool(TriCube);',
   '',
@@ -39,8 +45,8 @@ const chunks = [
 ];
 
 const output = `/**
- * Tri-Cube v${version} — BUILT FILE. Edit src/ and run: npm run build
- * Tool API (not Action). If you see setSelected errors, uninstall the plugin and load this file fresh.
+ * Tri-Cube v${version} — BUILT FILE (${PLUGIN_ID}.js)
+ * If you see "setSelected" errors you are running an OLD cached plugin — remove tri_cube, load THIS file.
  */
 (() => {
   const PLUGIN_VERSION = '${version}';
@@ -52,4 +58,8 @@ ${chunks.join('\n')}
 
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, output, 'utf8');
-console.log(`Built dist/tri_cube.js (v${version})`);
+if (fs.existsSync(LEGACY_OUT)) {
+  fs.unlinkSync(LEGACY_OUT);
+  console.log('Removed stale dist/tri_cube.js (use tri_cube_tool.js instead)');
+}
+console.log(`Built dist/${PLUGIN_ID}.js (v${version})`);
