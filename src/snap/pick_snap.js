@@ -178,24 +178,38 @@ function getPickCandidates(pickIndex, priorPicks) {
     return {
       entries,
       corners: entries.map((e) => e.point),
+      edges: [],
       hint: 'Pick anchor corner',
     };
   }
 
   const p0 = priorPicks[0];
+  const p0Point = p0.point || p0;
   if (pickIndex === 1) {
     const entries = collectAdjacentCornerEntries(p0);
+    const corners = entries.map((e) => e.point);
     return {
       entries,
-      corners: entries.map((e) => e.point),
+      corners,
+      edges: edgesFromAnchor(p0Point, corners),
       hint: entries.length ? 'Pick first edge corner (neighbor of anchor)' : 'Pick first edge corner',
     };
   }
 
   const entries = collectFaceCornerEntries(p0, priorPicks[1]);
+  const corners = entries.map((e) => e.point);
+  const p1Point = priorPicks[1].point || priorPicks[1];
+  const faceEdges = edgesFromAnchor(p0Point, corners);
+  faceEdges.push({ a: p0Point, b: p1Point });
+  for (let i = 0; i < corners.length; i++) {
+    for (let j = i + 1; j < corners.length; j++) {
+      faceEdges.push({ a: corners[i], b: corners[j] });
+    }
+  }
   return {
     entries,
-    corners: entries.map((e) => e.point),
+    corners,
+    edges: faceEdges,
     hint: 'Pick anywhere on the same face',
   };
 }
@@ -248,10 +262,27 @@ function getThirdPickFacePlane(p0Pick, p1Pick, hitPoint) {
 }
 
 function resolveThirdPickPoint(hitPoint, p0Pick, p1Pick, snapMode, candidates) {
-  const plane = getThirdPickFacePlane(p0Pick, p1Pick, hitPoint);
   let point = hitPoint.slice();
+
+  if (snapMode === SNAP.EDGE) {
+    const edgeSnap = resolveEdgeSnapPoint(hitPoint, candidates);
+    if (edgeSnap) point = edgeSnap.point;
+  }
+
+  const plane = getThirdPickFacePlane(p0Pick, p1Pick, hitPoint);
   if (plane) {
     point = TriCube.projectPointOntoPlane(point, plane.origin, plane.normal);
+  }
+
+  if (snapMode === SNAP.EDGE) {
+    const edgeSnap = resolveEdgeSnapPoint(point, candidates);
+    if (edgeSnap) {
+      return {
+        ...edgeSnap,
+        outliner: displayToOutliner(edgeSnap.point, p0Pick),
+        hint: 'Pick anywhere on the same face',
+      };
+    }
   }
 
   if (snapMode === SNAP.CORNER && candidates.entries?.length) {
@@ -291,23 +322,46 @@ function nearestEntry(target, entries) {
   return best;
 }
 
-function getAllCubeEdgesWorld() {
+function getCubeEdgesWorld(cube) {
+  const display = getCubeVerticesWorld(cube);
+  const outliner = getOutlinerCorners(cube);
+  if (display.length !== 8) return [];
+
   const edges = [];
-  for (const cube of Cube.all) {
-    if (cube.visibility === false) continue;
-    const verts = getCubeVerticesWorld(cube);
-    if (verts.length !== 8) continue;
-    const edgeLen = getCubeEdgeLength(verts);
-    const tol = Math.max(SNAP_EPS, edgeLen * 0.08);
-    for (let i = 0; i < verts.length; i++) {
-      for (let j = i + 1; j < verts.length; j++) {
-        if (approx(TriCube.distance(verts[i], verts[j]), edgeLen, tol)) {
-          edges.push({ a: verts[i], b: verts[j] });
-        }
+  for (let i = 0; i < 8; i++) {
+    for (let j = i + 1; j < 8; j++) {
+      let diffAxes = 0;
+      for (let k = 0; k < 3; k++) {
+        if (Math.abs(outliner[i][k] - outliner[j][k]) > SNAP_EPS) diffAxes++;
+      }
+      if (diffAxes === 1) {
+        edges.push({ a: display[i], b: display[j] });
       }
     }
   }
   return edges;
+}
+
+function getEdgeSnapMaxDist(hitPoint) {
+  const r = typeof TriCube.markerRadiusAt === 'function' ? TriCube.markerRadiusAt(hitPoint) : 0.14;
+  return Math.max(1.5, r * 16);
+}
+
+function collectEdgeList(candidates = {}) {
+  const edges = [];
+  if (candidates.edges?.length) edges.push(...candidates.edges);
+  for (const cube of Cube.all) {
+    if (cube.visibility === false) continue;
+    edges.push(...getCubeEdgesWorld(cube));
+  }
+  return edges;
+}
+
+function resolveEdgeSnapPoint(hitPoint, candidates = {}, options = {}) {
+  const maxDist = options.maxEdgeDist ?? getEdgeSnapMaxDist(hitPoint);
+  const nearestEdge = nearestEdgePoint(hitPoint, collectEdgeList(candidates), maxDist);
+  if (!nearestEdge) return null;
+  return { point: nearestEdge.point, mode: SNAP.EDGE, cube: null, outliner: null };
 }
 
 function edgesFromAnchor(anchor, corners) {
@@ -339,11 +393,12 @@ function closestPointOnSegment(point, a, b) {
   return TriCube.add(a, TriCube.scale(ab, t));
 }
 
-function nearestEdgePoint(target, edges) {
+function nearestEdgePoint(target, edges, maxDist) {
   let best = null;
   for (const edge of edges) {
     const point = closestPointOnSegment(target, edge.a, edge.b);
     const distance = TriCube.distance(target, point);
+    if (maxDist != null && distance > maxDist) continue;
     if (!best || distance < best.distance) {
       best = { point, distance, edge };
     }
@@ -355,10 +410,31 @@ function resolveSnapPoint(hitPoint, candidates, snapMode, options = {}) {
   const strictCandidates = options.strictCandidates ?? false;
 
   if (snapMode === SNAP.FACE || !candidates.entries?.length) {
+    if (snapMode === SNAP.EDGE) {
+      const edgeSnap = resolveEdgeSnapPoint(hitPoint, candidates, options);
+      if (edgeSnap) return edgeSnap;
+    }
     return { point: hitPoint.slice(), mode: SNAP.FACE, cube: null, outliner: null };
   }
 
-  if (strictCandidates) {
+  if (snapMode === SNAP.EDGE) {
+    const edgeSnap = resolveEdgeSnapPoint(hitPoint, candidates, options);
+    if (edgeSnap) {
+      const nearestCorner = nearestPoint(hitPoint, candidates.corners);
+      const edgeDist = TriCube.distance(hitPoint, edgeSnap.point);
+      if (
+        nearestCorner &&
+        nearestCorner.distance <= (options.cornerSnapDist ?? 0.22) &&
+        nearestCorner.distance < edgeDist * 0.65
+      ) {
+        const entry = nearestEntry(hitPoint, candidates.entries);
+        if (entry) return entry;
+      }
+      return edgeSnap;
+    }
+  }
+
+  if (strictCandidates && snapMode !== SNAP.EDGE) {
     const nearest = nearestEntry(hitPoint, candidates.entries);
     if (nearest) return nearest;
   }
@@ -366,12 +442,13 @@ function resolveSnapPoint(hitPoint, candidates, snapMode, options = {}) {
   const cornerBias = options.cornerBias ?? 0.45;
   const maxCornerDist = options.maxCornerDist ?? 24;
   const nearestCorner = nearestPoint(hitPoint, candidates.corners);
-  const nearestEdge = candidates.edges?.length ? nearestEdgePoint(hitPoint, candidates.edges) : null;
+  const edgeList = collectEdgeList(candidates);
+  const nearestEdge = edgeList.length ? nearestEdgePoint(hitPoint, edgeList) : null;
 
   if (snapMode === SNAP.EDGE && nearestEdge) {
     const preferEdge =
       !nearestCorner ||
-      nearestEdge.distance <= nearestCorner.distance * 1.05 ||
+      nearestEdge.distance <= nearestCorner.distance * 0.85 ||
       nearestCorner.distance > maxCornerDist;
     if (preferEdge) {
       return { point: nearestEdge.point, mode: SNAP.EDGE, cube: null, outliner: null };
@@ -431,18 +508,17 @@ function pickWorldPointFromRaycastQuad(result, snapMode, context = {}) {
   let mode = SNAP.FACE;
   let pickCube = null;
 
-  if (snapMode === SNAP.CORNER && cube instanceof Cube) {
+  if (snapMode === SNAP.EDGE) {
+    const edgeSnap = resolveEdgeSnapPoint(hitPoint, {}, context.snapOptions);
+    if (edgeSnap) {
+      point = edgeSnap.point;
+      mode = SNAP.EDGE;
+    }
+  } else if (snapMode === SNAP.CORNER && cube instanceof Cube) {
     const entry = nearestCornerEntry(cube, hitPoint);
     point = entry.point;
     mode = SNAP.CORNER;
     pickCube = cube;
-  } else if (snapMode === SNAP.EDGE && cube instanceof Cube) {
-    const edges = getAllCubeEdgesWorld();
-    const nearestEdge = nearestEdgePoint(hitPoint, edges);
-    if (nearestEdge) {
-      point = nearestEdge.point;
-      mode = SNAP.EDGE;
-    }
   }
 
   if (pickIndex >= 3 && priorPicks.length >= 3) {
@@ -496,6 +572,17 @@ function pickWorldPointFromRaycast(result, snapMode, context = {}) {
     };
   }
 
+  if (snapMode === SNAP.EDGE) {
+    const edgeSnap = resolveEdgeSnapPoint(hitPoint, candidates, context.snapOptions);
+    if (edgeSnap) {
+      return {
+        ...edgeSnap,
+        outliner: displayToOutliner(edgeSnap.point, refPick),
+        hint: candidates.hint,
+      };
+    }
+  }
+
   if (cube instanceof Cube && snapMode === SNAP.CORNER) {
     const entry = nearestCornerEntry(cube, hitPoint);
     return { ...entry, hint: candidates.hint };
@@ -542,5 +629,6 @@ function registerPickSnap(TriCube) {
   TriCube.pickWorldPointFromRaycast = pickWorldPointFromRaycast;
   TriCube.pickWorldPointFromRaycastQuad = pickWorldPointFromRaycastQuad;
   TriCube.snapModeFromEvent = snapModeFromEvent;
-  TriCube.closestPointOnSegment = closestPointOnSegment;
+  TriCube.getCubeEdgesWorld = getCubeEdgesWorld;
+  TriCube.resolveEdgeSnapPoint = resolveEdgeSnapPoint;
 }
