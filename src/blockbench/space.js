@@ -256,6 +256,11 @@ function createCubeFromResult(result, parent, picks) {
     );
   }
 
+  const sourceCube = picks[0]?.cube;
+  if (sourceCube instanceof Cube && TriCube.copyCubeAppearance?.(cube, sourceCube)) {
+    refreshCube(cube);
+  }
+
   cube.select();
   return cube;
 }

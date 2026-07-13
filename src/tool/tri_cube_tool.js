@@ -169,7 +169,7 @@ function registerTriCubeTool(TriCube) {
 
     Canvas.updateView({
       elements: [cube],
-      element_aspects: { geometry: true, transform: true },
+      element_aspects: { geometry: true, transform: true, faces: true },
       selection: true,
     });
 
