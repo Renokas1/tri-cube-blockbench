@@ -21,7 +21,7 @@ Create a perfectly oriented cube from **three corner picks** on existing geometr
 | **Shift** | Nearest edge midpoint |
 | **Ctrl** | Raw face hit (no snap) |
 
-Press **Esc** to cancel.
+Press **Esc** to cancel — clears locked picks first, then exits the tool on a second press.
 
 ## Result
 

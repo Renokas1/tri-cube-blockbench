@@ -15,7 +15,7 @@ Load in Blockbench:
 
 1. **Remove the old plugin** — Plugins → manage → delete/uninstall anything named **tri_cube** (the old broken copy). Do not use Dev Reload on it.
 2. **File → Plugins → Load Plugin From File** → `dist/tri_cube_tool.js` (in this repo after build). Keep `dist/about.md` in the same folder — Blockbench reads it on dev reload.
-3. Confirm in the console (F12): green **`[Tri-Cube] v0.4.1 loaded OK`** message.
+3. Confirm in the console (F12): green **`[Tri-Cube] v0.4.2 loaded OK`** message.
 
 Optional: `npm run install-plugin` copies the built file to your Blockbench plugins folder.
 
@@ -41,7 +41,7 @@ If you still see `setSelected` errors, Blockbench is running a stale copy — re
 | Shift | Nearest edge midpoint |
 | Ctrl | Raw face hit (no snap) |
 
-Press **Esc** to cancel the tool. After the third click a cube is created in the same outliner group as the first pick (or root).
+Press **Esc** to cancel — clears locked picks first, then exits the tool on a second press. After the third click a cube is created in the same outliner group as the first pick (or root).
 
 The new cube uses the **edge lengths from picks 2 and 3** for width/height and **1 unit** for depth (extruded inward from the picked face). If the first pick was on a cube with textures, **UV and texture settings are copied** from that cube.
 

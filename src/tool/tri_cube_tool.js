@@ -178,17 +178,25 @@ function registerTriCubeTool(TriCube) {
     resetPicks();
   }
 
-  function onKeydown(event) {
-    if (!tool || Tool.selected !== tool) return;
-    if (event.key === 'Escape') {
-      if (state.picks.length > 0) {
-        resetPicks();
-        status('Tri-Cube: picks cleared');
-      } else {
-        exitToDefaultTool();
-      }
-      event.preventDefault();
+  function onPressKey(data) {
+    if (!tool) return;
+    const selected = (typeof Toolbox !== 'undefined' && Toolbox.selected) || Tool.selected;
+    if (selected !== tool) return;
+
+    const event = data?.event;
+    if (!event || (event.code !== 'Escape' && event.key !== 'Escape')) return;
+    if (data.input_in_focus) return;
+
+    if (state.picks.length > 0) {
+      resetPicks();
+      status('Tri-Cube: picks cleared');
+    } else {
+      exitToDefaultTool();
     }
+
+    data.capture?.();
+    event.preventDefault?.();
+    event.stopPropagation?.();
   }
 
   TriCube._toolState = state;
@@ -223,14 +231,14 @@ function registerTriCubeTool(TriCube) {
     });
     MenuBar.menus.tools.addAction(tool);
 
-    Blockbench.on('keydown', onKeydown);
+    Blockbench.on('press_key', onPressKey);
 
     return tool;
   };
 
   TriCube.unregisterTriCubeToolUi = function unregisterTriCubeToolUi() {
     try {
-      Blockbench.removeListener('keydown', onKeydown);
+      Blockbench.removeListener('press_key', onPressKey);
     } catch (_) {}
     TriCube.disposePickGizmo?.();
     if (tool) {
