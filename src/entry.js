@@ -1,13 +1,13 @@
 /**
- * Tri-Cube & Quad-Cube — Blockbench plugin entry (bundled into dist/tri_cube_tool.js)
+ * Tri-Cube, Quad-Cube & Tri-Fill — Blockbench plugin entry (bundled into dist/tri_cube_tool.js)
  */
 function registerTriCubePlugin(TriCube) {
   Plugin.register('tri_cube_tool', {
-    title: 'Tri-Cube & Quad-Cube',
+    title: 'Tri-Cube Tools',
     author: 'Renokas1',
-    description: 'Create oriented cubes from 3 or 4 picks on existing geometry',
+    description: 'Oriented boxes and triangle UV fills from point picks on Java block models',
     about:
-      'Tri-Cube: 3 picks (anchor + two edges on one face). Quad-Cube: 4 picks anywhere on a plane — best-fit face, 1-unit depth. Shift = edge snap, Ctrl = face hit. Java Block model format recommended.',
+      'Tri-Cube: 3 picks on one face. Quad-Cube: 4 picks on a plane. Tri-Fill: 3 triangle corners, zero-depth camera-facing face (triangle texture atlas coming). Shift = edge, Ctrl = face. Java Block models recommended.',
     icon: 'crop_square',
     version: PLUGIN_VERSION,
     variant: 'desktop',
@@ -20,15 +20,17 @@ function registerTriCubePlugin(TriCube) {
       }
       TriCube.registerTriCubeToolUi();
       TriCube.registerQuadCubeToolUi();
+      TriCube.registerTriFillToolUi();
       console.log(
         `%c[Tri-Cube] v${PLUGIN_VERSION} loaded OK`,
         'color:#33ff66;font-weight:bold',
-        '— Tri-Cube + Quad-Cube tools'
+        '— Tri-Cube, Quad-Cube, Tri-Fill'
       );
     },
     onunload() {
       TriCube.unregisterTriCubeToolUi?.();
       TriCube.unregisterQuadCubeToolUi?.();
+      TriCube.unregisterTriFillToolUi?.();
       TriCube.disposePickGizmo?.();
     },
   });

@@ -200,6 +200,25 @@ function registerPickGizmo(TriCube) {
     refreshPreview();
   }
 
+  function setGhostTrianglePreview(triangle) {
+    ensureRoot();
+    if (!root) return;
+    if (!ghostGroup) {
+      ghostGroup = new THREE.Group();
+      ghostGroup.name = 'tri_cube_ghost';
+      root.add(ghostGroup);
+    }
+    clearGroup(ghostGroup);
+    if (!triangle || triangle.length !== 3) {
+      refreshPreview();
+      return;
+    }
+    addLine(ghostGroup, triangle[0], triangle[1], COLORS.ghost);
+    addLine(ghostGroup, triangle[1], triangle[2], COLORS.ghost);
+    addLine(ghostGroup, triangle[2], triangle[0], COLORS.ghost);
+    refreshPreview();
+  }
+
   function clearAll() {
     setHoverPoint(null);
     clearCandidateMarkers();
@@ -230,6 +249,7 @@ function registerPickGizmo(TriCube) {
   TriCube.setHoverPickPoint = setHoverPoint;
   TriCube.setCommittedPickMarkers = setCommittedPicks;
   TriCube.setGhostCubePreview = setGhostCube;
+  TriCube.setGhostTrianglePreview = setGhostTrianglePreview;
   TriCube.clearPickGizmo = clearAll;
   TriCube.disposePickGizmo = dispose;
 }

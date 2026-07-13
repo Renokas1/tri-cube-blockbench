@@ -1,6 +1,6 @@
-# Tri-Cube & Quad-Cube
+# Tri-Cube Tools
 
-Create oriented cubes from picks on existing geometry.
+Oriented boxes and triangle UV fills for Java block models.
 
 **Author:** Renokas1
 
@@ -22,7 +22,16 @@ Create oriented cubes from picks on existing geometry.
 
 Both tools extrude **1 unit** inward. Width/height come from your picks.
 
-### Snap modifiers (both tools)
+## Tri-Fill (3 picks)
+
+1. Enable **Tools → Tri-Fill Tool**.
+2. Click **three corners of a triangular hole**:
+   - **Pick 1** — on a cube (texture/UV sampled from this face)
+   - **Picks 2–3** — the other triangle corners (same plane)
+
+Creates a **zero-depth coplanar face** with **only the camera-facing side enabled**. Texture from pick 1 is copied to that face for now; shared triangle-fill PNGs are planned next.
+
+### Snap modifiers (all tools)
 
 | Modifier | Snaps to |
 |----------|----------|
@@ -34,6 +43,6 @@ Press **Esc** to cancel — clears locked picks first, then exits the tool on a 
 
 ## Result
 
-- Width and height match the picked edges; depth is **1 unit**, extruded inward from the picked face.
-- The cube is placed in the same outliner group as the first pick.
-- If the first pick is on a textured cube, **UV and texture settings are copied** from it.
+- **Tri-Cube / Quad-Cube:** box with pick-based width/height, 1-unit depth, inward extrusion.
+- **Tri-Fill:** zero-depth patch, single camera-facing face enabled, texture from pick 1 (triangle atlas TBD).
+- First pick group / UV copy matches the first pick’s cube when applicable.

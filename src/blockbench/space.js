@@ -273,7 +273,7 @@ function createCubeFromResult(result, parent, picks, options = {}) {
   }
 
   const sourceCube = picks[0]?.cube;
-  if (sourceCube instanceof Cube && TriCube.copyCubeAppearance?.(cube, sourceCube)) {
+  if (!options.skipAppearanceCopy && sourceCube instanceof Cube && TriCube.copyCubeAppearance?.(cube, sourceCube)) {
     refreshCube(cube);
   }
 

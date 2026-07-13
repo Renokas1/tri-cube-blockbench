@@ -481,6 +481,57 @@ function displayToOutliner(displayPoint, referencePick) {
   return displayPoint.slice();
 }
 
+function pickWorldPointFromRaycastTriFill(result, snapMode, context = {}) {
+  if (!result || result.type === 'none') return null;
+
+  const hitPoint = TriCube.getRaycastHitPoint(result);
+  if (!hitPoint) return null;
+
+  const pickIndex = context.pickIndex ?? 0;
+  const priorPicks = context.priorPicks ?? [];
+  const refPick = priorPicks[0];
+  const cube = result.element instanceof Cube ? result.element : result.cube;
+
+  if (pickIndex === 0) {
+    if (result.type === 'vertex' && cube instanceof Cube && result.vertex_index != null) {
+      const entry = makeCornerEntry(cube, result.vertex_index);
+      return { ...entry, face: result.face || null, hint: 'Pick anchor corner on a cube' };
+    }
+    if (cube instanceof Cube) {
+      const entry = nearestCornerEntry(cube, hitPoint);
+      return { ...entry, face: result.face || null, hint: 'Pick anchor corner on a cube' };
+    }
+    return null;
+  }
+
+  let point = hitPoint.slice();
+  let mode = SNAP.FACE;
+  let pickCube = null;
+  const hint = 'Pick triangle corner';
+
+  if (snapMode === SNAP.EDGE) {
+    const edgeSnap = resolveEdgeSnapPoint(hitPoint, {}, context.snapOptions);
+    if (edgeSnap) {
+      point = edgeSnap.point;
+      mode = SNAP.EDGE;
+    }
+  } else if (snapMode === SNAP.CORNER && cube instanceof Cube) {
+    const entry = nearestCornerEntry(cube, hitPoint);
+    point = entry.point;
+    mode = SNAP.CORNER;
+    pickCube = cube;
+  }
+
+  return {
+    point,
+    outliner: displayToOutliner(point, refPick),
+    mode,
+    cube: pickCube,
+    face: result.face || null,
+    hint,
+  };
+}
+
 function pickWorldPointFromRaycastQuad(result, snapMode, context = {}) {
   if (!result || result.type === 'none') return null;
 
@@ -559,7 +610,7 @@ function pickWorldPointFromRaycast(result, snapMode, context = {}) {
 
   if (result.type === 'vertex' && cube instanceof Cube && result.vertex_index != null) {
     const entry = makeCornerEntry(cube, result.vertex_index);
-    return { ...entry, hint: candidates.hint };
+    return { ...entry, face: result.face || null, hint: candidates.hint };
   }
 
   if (snapMode === SNAP.FACE) {
@@ -568,6 +619,7 @@ function pickWorldPointFromRaycast(result, snapMode, context = {}) {
       outliner: displayToOutliner(hitPoint, refPick),
       mode: SNAP.FACE,
       cube: cube || null,
+      face: result.face || null,
       hint: candidates.hint,
     };
   }
@@ -585,7 +637,7 @@ function pickWorldPointFromRaycast(result, snapMode, context = {}) {
 
   if (cube instanceof Cube && snapMode === SNAP.CORNER) {
     const entry = nearestCornerEntry(cube, hitPoint);
-    return { ...entry, hint: candidates.hint };
+    return { ...entry, face: result.face || null, hint: candidates.hint };
   }
 
   if (candidates.entries.length) {
@@ -595,6 +647,7 @@ function pickWorldPointFromRaycast(result, snapMode, context = {}) {
     });
     return {
       ...snapped,
+      face: result.face || snapped.face || null,
       outliner: snapped.outliner || displayToOutliner(snapped.point, refPick),
       hint: candidates.hint,
     };
@@ -602,7 +655,7 @@ function pickWorldPointFromRaycast(result, snapMode, context = {}) {
 
   if (cube instanceof Cube) {
     const entry = nearestCornerEntry(cube, hitPoint);
-    return { ...entry, hint: candidates.hint };
+    return { ...entry, face: result.face || null, hint: candidates.hint };
   }
 
   return {
@@ -627,6 +680,7 @@ function registerPickSnap(TriCube) {
   TriCube.getPickCandidates = getPickCandidates;
   TriCube.getThirdPickFacePlane = getThirdPickFacePlane;
   TriCube.pickWorldPointFromRaycast = pickWorldPointFromRaycast;
+  TriCube.pickWorldPointFromRaycastTriFill = pickWorldPointFromRaycastTriFill;
   TriCube.pickWorldPointFromRaycastQuad = pickWorldPointFromRaycastQuad;
   TriCube.snapModeFromEvent = snapModeFromEvent;
   TriCube.getCubeEdgesWorld = getCubeEdgesWorld;
