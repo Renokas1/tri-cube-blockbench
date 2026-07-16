@@ -11,7 +11,7 @@ function registerTriCubePlugin(TriCube) {
     icon: 'crop_square',
     version: PLUGIN_VERSION,
     variant: 'desktop',
-    min_version: '4.10.0',
+    min_version: '5.0.0',
     tags: ['Minecraft: Java Edition'],
     onload() {
       if (typeof Tool !== 'function') {

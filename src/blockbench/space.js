@@ -256,6 +256,8 @@ function createCubeFromResult(result, parent, picks, options = {}) {
     origin: [0, 0, 0],
     rotation: [0, 0, 0],
     autouv: 1,
+    ...(options.cubeInit || {}),
+    ...(options.faces ? { faces: options.faces } : {}),
   }).init();
 
   if (parent && typeof cube.addTo === 'function') {
@@ -277,7 +279,9 @@ function createCubeFromResult(result, parent, picks, options = {}) {
     refreshCube(cube);
   }
 
-  cube.select();
+  if (!options.skipSelect) {
+    cube.select();
+  }
   return cube;
 }
 
